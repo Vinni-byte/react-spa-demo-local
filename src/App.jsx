@@ -27,12 +27,12 @@ function Navbar() {
 function Home() {
   return (
     <div>
-      <h1>HOME - PLACEHOLDER-doodo</h1>
+      <h1>HOME - PLACEHOLDER-The PLACEHOLDER</h1>
       <div className="hero-image">
         <div className="hero-text">
           <h1>AHAMKARA WHERE DREAMS CEASE TO EXIST</h1>
           <p>And I'm a Photographer</p>
-          <button>Hire me</button>
+          <button>Hire me</button> 
         </div>
       </div>
     </div>
