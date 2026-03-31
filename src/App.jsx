@@ -57,21 +57,29 @@ function Products() {
       <h1>PRODUCTS</h1>
       <div className="balls">
         {products.map((product) => (
-          <div key={product.id} className="product-card">
+     <div className="balls"> 
+      {products.map((product, index) => {
+        const isFeatured = (index + 1) % 9 === 0;
+
+        return (
+          <div
+            key={product.id}
+            className={`product-card ${isFeatured ? "featured" : ""}`}
+          >
             <img
               className="ball-image"
               src={product.image}
-              width="300"
-              height="250"
               alt={product.name}
             />
             <h2>{product.name}</h2>
             <p>{product.price} kr</p>
           </div>
-        ))}
-      </div>
+        );
+      })}
     </div>
-  );
+
+  </div>
+);
 }
 
 function Cart() {
