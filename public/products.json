@@ -1,0 +1,30 @@
+[
+  {
+    "id": 1,
+    "name": "Blue Ball",
+    "price": 199,
+    "image": "/img/b-ball.jpg",
+    "category": "sports"
+  },
+  {
+    "id": 2,
+    "name": "Volleyball",
+    "price": 249,
+    "image": "/img/v-ball.png",
+    "category": "sports"
+  },
+  {
+    "id": 3,
+    "name": "Green Ball",
+    "price": 179,
+    "image": "/img/g-ball.jpg",
+    "category": "sports"
+  },
+  {
+    "id": 4,
+    "name": "Bicolor Ball",
+    "price": 229,
+    "image": "/img/bi-ball.png",
+    "category": "sports"
+  }
+]

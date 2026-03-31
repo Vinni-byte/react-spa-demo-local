@@ -1,0 +1,73 @@
+/*
+root {
+}
+*/
+
+
+/* justerar storleken för alla objekt */
+html, body, #root {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+}
+
+body {
+  font-family: "Bebas Neue", sans-serif;
+  background: #efefef;
+  /*color:#000000; -can be used to put color on things that deos not */
+}
+
+* {
+  box-sizing: border-box;
+}
+
+/*Navbar */
+.nav-links {
+  font-size: 3.2em;
+  line-height: 1.1;
+  font-weight: 400;
+  font-style: normal;
+  background: #000000;
+   text-decoration: none;
+}
+
+.nav-links a {
+  text-decoration: none;
+  color:rgb(162, 159, 159);
+  padding: 5px;
+}
+
+.nav-links a.active {
+  color: rgb(255, 255, 255);
+  border-bottom: 2px solid red;
+}
+
+#hero-img {
+  width: 100%;
+  height: 50pc;
+  
+}
+
+.hero-image {
+  /* Use "linear-gradient" to add a darken background effect to the image (photographer.jpg). This will make the text easier to read */
+  background-image: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url("hero.jpg");
+
+  /* Set a specific height */
+  height: 50%;
+
+  /* Position and center the image to scale nicely on all screens */
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
+  position: relative;
+}
+
+/* Place text in the middle of the image */
+.hero-text {
+  text-align: center;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: white;
+}
