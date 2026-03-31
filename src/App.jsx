@@ -31,8 +31,11 @@ function Home() {
       <div className="hero-image">
         <div className="hero-text">
           <h1>AHAMKARA WHERE DREAMS CEASE TO EXIST</h1>
-          <p>And I'm a Photographer</p>
-          <button>Hire me</button> 
+          <p>The Sport store for you</p>
+          
+<NavLink to="/products">
+  <button>Shop</button>
+</NavLink>
         </div>
       </div>
     </div>
