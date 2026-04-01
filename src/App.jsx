@@ -27,14 +27,13 @@ function Navbar() {
 function Home() {
   return (
     <div>
-      <h1>HOME - PLACEHOLDER-The PLACEHOLDER</h1>
       <div className="hero-image">
         <div className="hero-text">
           <h1>AHAMKARA WHERE DREAMS CEASE TO EXIST</h1>
           <p>The Sport store for you</p>
           
 <NavLink to="/products">
-  <button>Shop</button>
+  <button id="home-shop-button">Shop</button>
 </NavLink>
         </div>
       </div>
@@ -42,7 +41,7 @@ function Home() {
   );
 }
 
-function Products() {
+function Products({ addToCart }) {
   const [products, setProducts] = useState([]);
 
   useEffect(() => {
@@ -55,8 +54,6 @@ function Products() {
   return (
     <div>
       <h1>PRODUCTS</h1>
-      <div className="balls">
-        {products.map((product) => (
      <div className="balls"> 
       {products.map((product, index) => {
         const isFeatured = (index + 1) % 9 === 0;
@@ -73,6 +70,7 @@ function Products() {
             />
             <h2>{product.name}</h2>
             <p>{product.price} kr</p>
+              <button id="button-product" onClick={() => addToCart(product)}>Add to cart</button>
           </div>
         );
       })}
@@ -82,17 +80,46 @@ function Products() {
 );
 }
 
+function Cart({cart}) {
+  return (
+    <div>
+      <h1>CART</h1>
+
+      {cart.length === 0 ? (
+        <p>Your cart is empty.</p>
+      ) : (
+        cart.map((product, index) => (
+          <div key={index} className="cart-item">
+            <img
+              src={product.image}
+              alt={product.name}
+              width="120"
+            />
+            <h2>{product.name}</h2>
+            <p>{product.price} kr</p>
+          </div>
+        ))
+      )}
+    </div>
+  );
 }
 
+
+
+
 function App() {
+   const [cart, setCart] = useState([]);
+  const addToCart = (product) => {
+  setCart((prevCart) => [...prevCart, product]);
+};
   return (
     <BrowserRouter>
       <Navbar />
       <main className="page-content">
         <Routes>
           <Route path="/" element={<Home />} />
-          <Route path="/products" element={<Products />} />
-          <Route path="/cart" element={<Cart />} />
+          <Route path="/products" element={<Products addToCart={addToCart} />} />
+          <Route path="/cart" element={<Cart cart={cart}/>} />
         </Routes>
       </main>
     </BrowserRouter>
