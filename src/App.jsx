@@ -82,8 +82,6 @@ function Products() {
 );
 }
 
-function Cart() {
-  return <h1>CART - PLACEHOLDER</h1>;
 }
 
 function App() {
