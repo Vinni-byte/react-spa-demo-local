@@ -92,7 +92,17 @@ background-image: linear-gradient(
     height: 30px;
   }
 
-  #home-shop-button:hover {
+  #button-product:hover {
   cursor: pointer;
   background-color: #c3bfbf;
+}
+
+.product-card a {
+  text-decoration: none;
+  font-size: 40px;
+  color: white;
+}
+
+.product-card a:hover {
+  color: rgb(182, 181, 181);
 }

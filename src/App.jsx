@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, NavLink } from "react-router-dom";
+import { BrowserRouter, Routes, Route, NavLink,useParams } from "react-router-dom";
 import { useEffect, useState } from "react";
 import "./App.css";
 
@@ -63,14 +63,19 @@ function Products({ addToCart }) {
             key={product.id}
             className={`product-card ${isFeatured ? "featured" : ""}`}
           >
-            <img
-              className="ball-image"
-              src={product.image}
-              alt={product.name}
-            />
-            <h2>{product.name}</h2>
-            <p>{product.price} kr</p>
-              <button id="button-product" onClick={() => addToCart(product)}>Add to cart</button>
+          <NavLink to={`/products/${product.id}`}>
+  <img
+    className="ball-image"
+    src={product.image}
+    alt={product.name}
+  />
+</NavLink>
+
+<h2>
+  <NavLink to={`/products/${product.id}`}>
+    {product.name}
+  </NavLink>
+</h2>
           </div>
         );
       })}
@@ -78,6 +83,40 @@ function Products({ addToCart }) {
 
   </div>
 );
+}
+
+function ProductDetails({ addToCart }) {
+  const { id } = useParams();
+  const [product, setProduct] = useState(null);
+
+  useEffect(() => {
+    fetch("/products.json")
+      .then((res) => res.json())
+      .then((data) => {
+        const foundProduct = data.find((p) => p.id === Number(id));
+        setProduct(foundProduct);
+      })
+      .catch((error) => console.error("Fel vid hämtning av produkt:", error));
+  }, [id]);
+
+  if (!product) {
+    return <p>Loading...</p>;
+  }
+
+  return (
+    <div>
+      <h1>{product.name}</h1>
+      <img
+        className="buy-image"
+        src={product.image}
+        alt={product.name}
+      />
+      <p>{product.price} kr</p>
+      <button id="button-product" onClick={() => addToCart(product)}>
+        Add to cart
+      </button>
+    </div>
+  );
 }
 
 function Cart({cart}) {
@@ -119,6 +158,7 @@ function App() {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/products" element={<Products addToCart={addToCart} />} />
+          <Route path="/products/:id" element={<ProductDetails addToCart={addToCart} />} />
           <Route path="/cart" element={<Cart cart={cart}/>} />
         </Routes>
       </main>

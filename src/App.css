@@ -115,3 +115,12 @@
 .product-card.featured .ball-image {
   height: 400px;
 }
+
+/*Bilden som man får när man trycker på produkten*/
+.buy-image {
+  width: 400px;
+  height: 300px;
+  object-fit: cover;
+  border-radius: 8px;
+  display: block;
+}
