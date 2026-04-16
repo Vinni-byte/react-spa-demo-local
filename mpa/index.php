@@ -1,8 +1,3 @@
-<?php
-session_start();
-$cart = $_SESSION['cart'] ?? [];
-?>
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -25,27 +20,24 @@ $cart = $_SESSION['cart'] ?? [];
     </div>
 
     <div class="navbar-links">
-      <a href="index.php">Home</a>
+      <a href="index.php" class="active">Home</a>
       <a href="products.php">Products</a>
-      <a href="cart.php" class="active"> Cart</a>
+      <a href="cart.php">Cart</a>
     </div>
   </nav>
 
-<main class="page-content">
-  <h1>CART</h1>
+  <main>
+    <div class="hero-image">
+      <div class="hero-text">
+        <h1>AHAMKARA WHERE DREAMS CEASE TO EXIST</h1>
+        <p>The Sport store for you</p>
 
-  <?php if (empty($cart)): ?>
-    <p>Your cart is empty.</p>
-  <?php else: ?>
-    <?php foreach ($cart as $item): ?>
-      <div>
-        <img src="<?php echo $item['image']; ?>" width="120">
-        <h2><?php echo $item['name']; ?></h2>
-        <p><?php echo $item['price']; ?> kr</p>
+        <a href="products.php">
+          <button id="home-shop-button">Shop</button>
+        </a>
       </div>
-    <?php endforeach; ?>
-  <?php endif; ?>
-</main>
+    </div>
+  </main>
 
 </body>
 </html>

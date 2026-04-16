@@ -116,6 +116,26 @@
   height: 400px;
 }
 
+.product-details {
+  max-width: 700px;
+  margin: 0 auto;
+}
+
+.product-details h1 {
+  margin-bottom: 20px;
+}
+
+.product-details p {
+  font-size: 28px;
+  margin: 20px 0;
+  color: black;
+  text-shadow: none;
+}
+
+.product-details form {
+  margin-top: 15px;
+}
+
 /*Bilden som man får när man trycker på produkten*/
 .buy-image {
   width: 400px;
@@ -123,4 +143,19 @@
   object-fit: cover;
   border-radius: 8px;
   display: block;
+}
+
+.product-details {
+  max-width: 700px;
+}
+
+.product-details p {
+  font-size: 28px;
+  color: black;
+  text-shadow: none;
+  margin: 20px 0;
+}
+
+.product-details form {
+  margin-top: 10px;
 }
