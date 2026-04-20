@@ -76,6 +76,7 @@ function Products({ addToCart }) {
     {product.name}
   </NavLink>
 </h2>
+<p>{product.price} kr</p>
           </div>
         );
       })}
