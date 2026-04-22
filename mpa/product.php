@@ -1,8 +1,8 @@
 <?php
 session_start();
 
-$data = file_get_contents("products.json");
-$products = json_decode($data, true);
+$json = file_get_contents(__DIR__ . '/products-mpa.json');
+$products = json_decode($json, true);
 
 $id = $_GET['id'] ?? null;
 $product = null;
@@ -51,22 +51,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $product) {
     </div>
   </nav>
 
-  <main class="page-content">
-    <?php if ($product): ?>
+ <main class="page-content">
+  <?php($product): ?>
+    <div class="product-details">
       <h1><?php echo $product['name']; ?></h1>
-      <img
-        class="buy-image"
-        src="<?php echo $product['image']; ?>"
-        alt="<?php echo $product['name']; ?>"
-      >
+      <img class="buy-image" src="../img/<?php echo $product['image']; ?>" alt="<?php echo $product['name']; ?>">
       <p><?php echo $product['price']; ?> kr</p>
-        <form method="POST">
-            <button id="button-product">Add to cart</button>
-        </form>
-    <?php else: ?>
-      <p>Produkten kunde inte hittas.</p>
-    <?php endif; ?>
-  </main>
+      <form method="POST">
+        <button id="button-product">Add to cart</button>
+      </form>
+    </div>
+</main>
 
 </body>
 </html>

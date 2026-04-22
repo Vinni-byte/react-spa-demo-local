@@ -1,6 +1,6 @@
 <?php
-$data = file_get_contents("products.json");
-$products = json_decode($data, true);
+$json = file_get_contents(__DIR__ . '/products-mpa.json');
+$products = json_decode($json, true);
 ?>
 
 <!DOCTYPE html>
@@ -40,7 +40,7 @@ $products = json_decode($data, true);
 
         <div class="product-card <?php echo $isFeatured ? 'featured' : ''; ?>">
           <a href="product.php?id=<?php echo $product['id']; ?>">
-            <img class="ball-image" src="<?php echo $product['image']; ?>" alt="<?php echo $product['name']; ?>">
+          <img class="ball-image" src="../img/<?php echo $product['image']; ?>" alt="<?php echo $product['name']; ?>">
           </a>
 
           <h2>
@@ -50,7 +50,7 @@ $products = json_decode($data, true);
           </h2>
 
           <p><?php echo $product['price']; ?> kr</p>
-        </div>
+      </div>
       <?php endforeach; ?>
     </div>
   </main>
