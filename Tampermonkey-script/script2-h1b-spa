@@ -1,0 +1,172 @@
+// ==UserScript==
+// @name         SPA Flow Navigation Test Stable
+// @namespace    http://tampermonkey.net/
+// @version      1.0
+// @description  Mäter navigeringsflöde i SPA-versionen för pilotstudien
+// @match        http://localhost:5173/*
+// @grant        none
+// ==/UserScript==
+
+(function () {
+    "use strict";
+
+    const ITERATIONS = 20;
+
+    const RUN_KEY = "spa_flow_running";
+    const COUNTER_KEY = "spa_flow_counter";
+    const DATA_KEY = "spa_flow_data";
+
+    const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+    function downloadCSV(csv) {
+        const blob = new Blob([csv], { type: "text/csv" });
+        const url = URL.createObjectURL(blob);
+
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "spa-flow-navigation.csv";
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+
+        URL.revokeObjectURL(url);
+    }
+
+    async function waitForSelector(selector, timeout = 5000) {
+        const start = performance.now();
+
+        while (performance.now() - start < timeout) {
+            const element = document.querySelector(selector);
+            if (element) return element;
+            await wait(50);
+        }
+
+        throw new Error("Kunde inte hitta element: " + selector);
+    }
+
+    async function waitForPath(pathStart, timeout = 5000) {
+        const start = performance.now();
+
+        while (performance.now() - start < timeout) {
+            if (window.location.pathname.startsWith(pathStart)) return;
+            await wait(50);
+        }
+
+        throw new Error("Nådde inte path: " + pathStart);
+    }
+
+    async function waitForCartReady(timeout = 5000) {
+        const start = performance.now();
+
+        while (performance.now() - start < timeout) {
+            const text = document.body.innerText.toLowerCase();
+
+            if (
+                window.location.pathname === "/cart" &&
+                text.includes("cart") &&
+                !text.includes("your cart is empty")
+            ) {
+                return;
+            }
+
+            await wait(50);
+        }
+
+        throw new Error("Cart blev inte färdig med produkt");
+    }
+
+    function startFreshHome() {
+        window.location.href = "/";
+    }
+
+    async function runFlowOnce() {
+        await waitForSelector('a[href="/products"]');
+
+        const start = performance.now();
+
+        // Home -> Products
+        const productsLink = await waitForSelector('a[href="/products"]');
+        productsLink.click();
+        await waitForPath("/products");
+        await waitForSelector(".product-card a");
+
+        // Products -> Product
+        const productLink = await waitForSelector(".product-card a");
+        productLink.click();
+        await waitForPath("/products/");
+        await waitForSelector("#button-product");
+
+        // Add to cart
+        const addButton = await waitForSelector("#button-product");
+        addButton.click();
+
+        // Product -> Cart
+        const cartLink = await waitForSelector('a[href="/cart"]');
+        cartLink.click();
+        await waitForPath("/cart");
+        await waitForCartReady();
+
+        const end = performance.now();
+
+        return end - start;
+    }
+
+    window.startSPAFlowTest = function () {
+        localStorage.setItem(RUN_KEY, "true");
+        localStorage.setItem(COUNTER_KEY, "0");
+        localStorage.setItem(DATA_KEY, "Iteration,TotalFlowTime_ms\n");
+
+        console.log("Startar SPA flow-test...");
+        startFreshHome();
+    };
+
+    async function continueTestIfRunning() {
+        if (localStorage.getItem(RUN_KEY) !== "true") return;
+
+        let counter = parseInt(localStorage.getItem(COUNTER_KEY) || "0", 10);
+        let data = localStorage.getItem(DATA_KEY) || "Iteration,TotalFlowTime_ms\n";
+
+        if (counter >= ITERATIONS) {
+            downloadCSV(data);
+            localStorage.removeItem(RUN_KEY);
+            localStorage.removeItem(COUNTER_KEY);
+            localStorage.removeItem(DATA_KEY);
+            alert("SPA flow-test klart");
+            return;
+        }
+
+        if (window.location.pathname !== "/") {
+            startFreshHome();
+            return;
+        }
+
+        try {
+            await wait(500);
+
+            const totalTime = await runFlowOnce();
+
+            counter++;
+            data += `${counter},${totalTime.toFixed(2)}\n`;
+
+            localStorage.setItem(COUNTER_KEY, String(counter));
+            localStorage.setItem(DATA_KEY, data);
+
+            console.log(`SPA flow ${counter}/${ITERATIONS}: ${totalTime.toFixed(2)} ms`);
+
+            // Reset: refresh/home för att tömma React state. Räknas inte in i tiden.
+            setTimeout(() => {
+                startFreshHome();
+            }, 700);
+
+        } catch (error) {
+            console.error("SPA flow-test stoppades:", error);
+            alert("SPA flow-test stoppades: " + error.message);
+        }
+    }
+
+    window.addEventListener("load", () => {
+        setTimeout(continueTestIfRunning, 300);
+    });
+
+    console.log("SPA flow test stable loaded. Kör startSPAFlowTest()");
+})();
