@@ -39,7 +39,7 @@ $cart = $_SESSION['cart'] ?? [];
   <?php else: ?>
     <?php foreach ($cart as $item): ?>
       <div>
-        <img src="<?php echo $item['image']; ?>" width="120">
+         <img src="../img/<?php echo $item['image']; ?>" width="120" alt="<?php echo $item['name']; ?>">
         <h2><?php echo $item['name']; ?></h2>
         <p><?php echo $item['price']; ?> kr</p>
       </div>
