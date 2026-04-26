@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name         SPA Flow Navigation Test Stable
+// @name         SPA Flow Navigation Test
 // @namespace    http://tampermonkey.net/
 // @version      1.0
 // @description  Mäter navigeringsflöde i SPA-versionen för pilotstudien

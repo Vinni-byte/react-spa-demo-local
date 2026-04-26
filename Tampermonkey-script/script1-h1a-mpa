@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name         MPA Initial Load Test Fixed
+// @name         MPA Initial Load Test
 // @namespace    http://tampermonkey.net/
 // @version      1.0
 // @match        http://localhost/*/mpa/products.php*
