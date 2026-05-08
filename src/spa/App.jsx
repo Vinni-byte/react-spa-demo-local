@@ -148,10 +148,23 @@ function Cart({cart}) {
 
 
 function App() {
-   const [cart, setCart] = useState([]);
+  function getStoredCart() {
+  return JSON.parse(localStorage.getItem("cart") || "[]");
+}
+
+function saveStoredCart(cart) {
+  localStorage.setItem("cart", JSON.stringify(cart));
+}
+  const [cart, setCart] = useState(() => getStoredCart());
+
   const addToCart = (product) => {
-  setCart((prevCart) => [...prevCart, product]);
-};
+    setCart((prevCart) => {
+      const updatedCart = [...prevCart, product];
+      saveStoredCart(updatedCart);
+      return updatedCart;
+    });
+  };
+
   return (
     <BrowserRouter>
       <Navbar />
@@ -160,7 +173,7 @@ function App() {
           <Route path="/" element={<Home />} />
           <Route path="/products" element={<Products addToCart={addToCart} />} />
           <Route path="/products/:id" element={<ProductDetails addToCart={addToCart} />} />
-          <Route path="/cart" element={<Cart cart={cart}/>} />
+          <Route path="/cart" element={<Cart cart={cart} />} />
         </Routes>
       </main>
     </BrowserRouter>
