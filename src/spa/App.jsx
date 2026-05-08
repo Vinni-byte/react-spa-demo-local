@@ -1,6 +1,6 @@
-import { BrowserRouter, Routes, Route, NavLink,useParams } from "react-router-dom";
+import { BrowserRouter, Routes, Route, NavLink, useParams } from "react-router-dom";
 import { useEffect, useState } from "react";
-import "./App.css";
+import "../App.css";
 
 function Navbar() {
   return (
