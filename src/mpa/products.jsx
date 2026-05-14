@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import "../index.css";
 import "../App.css";
@@ -21,6 +21,12 @@ function Navbar() {
 
 function Products() {
   const [products, setProducts] = useState([]);
+  const hasMarkedReady = useRef(false);
+
+  useEffect(() => {
+    window.__productsReadyTime = null;
+    hasMarkedReady.current = false;
+  }, []);
 
   useEffect(() => {
     fetch("/products.json")
@@ -29,45 +35,61 @@ function Products() {
       .catch((error) => console.error("Fel vid hämtning av produkter:", error));
   }, []);
 
+  useEffect(() => {
+    if (!hasMarkedReady.current && products.length >= 50) {
+      hasMarkedReady.current = true;
+
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          const readyTime = performance.now();
+
+          window.__productsReadyTime = readyTime;
+
+          window.dispatchEvent(
+            new CustomEvent("products-ready", {
+              detail: { time: readyTime },
+            })
+          );
+        });
+      });
+    }
+  }, [products.length]);
+
   return (
-    <>
+    <div>
       <Navbar />
 
-      <main className="page-content">
-        <div>
-          <h1>PRODUCTS</h1>
+      <h1>PRODUCTS</h1>
 
-          <div className="balls">
-            {products.map((product, index) => {
-              const isFeatured = (index + 1) % 9 === 0;
+      <div className="balls">
+        {products.map((product, index) => {
+          const isFeatured = (index + 1) % 9 === 0;
 
-              return (
-                <div
-                  key={product.id}
-                  className={`product-card ${isFeatured ? "featured" : ""}`}
-                >
-                  <a href={`/mpa-product.html?id=${product.id}`}>
-                    <img
-                      className="ball-image"
-                      src={product.image}
-                      alt={product.name}
-                    />
-                  </a>
+          return (
+            <div
+              key={product.id}
+              className={`product-card ${isFeatured ? "featured" : ""}`}
+            >
+              <a href={`/mpa-product.html?id=${product.id}`}>
+                <img
+                  className="ball-image"
+                  src={product.image}
+                  alt={product.name}
+                />
+              </a>
 
-                  <h2>
-                    <a href={`/mpa-product.html?id=${product.id}`}>
-                      {product.name}
-                    </a>
-                  </h2>
+              <h2>
+                <a href={`/mpa-product.html?id=${product.id}`}>
+                  {product.name}
+                </a>
+              </h2>
 
-                  <p>{product.price} kr</p>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </main>
-    </>
+              <p>{product.price} kr</p>
+            </div>
+          );
+        })}
+      </div>
+    </div>
   );
 }
 

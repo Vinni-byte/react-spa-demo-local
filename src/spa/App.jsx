@@ -1,5 +1,5 @@
 import { BrowserRouter, Routes, Route, NavLink, useParams } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import "../App.css";
 
 function Navbar() {
@@ -43,6 +43,12 @@ function Home() {
 
 function Products({ addToCart }) {
   const [products, setProducts] = useState([]);
+  const hasMarkedReady = useRef(false);
+
+  useEffect(() => {
+    window.__productsReadyTime = null;
+    hasMarkedReady.current = false;
+  }, []);
 
   useEffect(() => {
     fetch("/products.json")
@@ -51,41 +57,61 @@ function Products({ addToCart }) {
       .catch((error) => console.error("Fel vid hämtning av produkter:", error));
   }, []);
 
+  useEffect(() => {
+    if (!hasMarkedReady.current && products.length > 50) {
+      hasMarkedReady.current = true;
+
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          const readyTime = performance.now();
+
+          window.__productsReadyTime = readyTime;
+
+          window.dispatchEvent(
+            new CustomEvent("products-ready", {
+              detail: { time: readyTime }
+            })
+          );
+        });
+      });
+    }
+  }, [products.length]);
+
   return (
     <div>
       <h1>PRODUCTS</h1>
-     <div className="balls"> 
-      {products.map((product, index) => {
-        const isFeatured = (index + 1) % 9 === 0;
 
-        return (
-          <div
-            key={product.id}
-            className={`product-card ${isFeatured ? "featured" : ""}`}
-          >
-          <NavLink to={`/products/${product.id}`}>
-  <img
-    className="ball-image"
-    src={product.image}
-    alt={product.name}
-  />
-</NavLink>
+      <div className="balls">
+        {products.map((product, index) => {
+          const isFeatured = (index + 1) % 9 === 0;
 
-<h2>
-  <NavLink to={`/products/${product.id}`}>
-    {product.name}
-  </NavLink>
-</h2>
-<p>{product.price} kr</p>
-          </div>
-        );
-      })}
+          return (
+            <div
+              key={product.id}
+              className={`product-card ${isFeatured ? "featured" : ""}`}
+            >
+              <NavLink to={`/products/${product.id}`}>
+                <img
+                  className="ball-image"
+                  src={product.image}
+                  alt={product.name}
+                />
+              </NavLink>
+
+              <h2>
+                <NavLink to={`/products/${product.id}`}>
+                  {product.name}
+                </NavLink>
+              </h2>
+
+              <p>{product.price} kr</p>
+            </div>
+          );
+        })}
+      </div>
     </div>
-
-  </div>
-);
+  );
 }
-
 function ProductDetails({ addToCart }) {
   const { id } = useParams();
   const [product, setProduct] = useState(null);
