@@ -1,19 +1,24 @@
 // ==UserScript==
-// @name         SPA Initial Load Test Products Rendered
+// @name         SPA Initial Load Test Products Ready
 // @namespace    http://tampermonkey.net/
-// @version      2.0
-// @description  Mäter initial laddningstid för SPA produktsida inklusive renderade produktkort
+// @version      3.1
+// @description  Mäter initial laddningstid för SPA produktsida med products-ready-signal från React
 // @match        http://localhost:5173/products*
 // @grant        none
+// @run-at       document-start
 // ==/UserScript==
 
 (function () {
     "use strict";
 
     const ITERATIONS = 20;
+
     const COUNTER_KEY = "spa_initial_counter";
     const DATA_KEY = "spa_initial_data";
     const RUN_KEY = "spa_initial_running";
+
+    const CSV_HEADER =
+        "Iteration,LoadEventEnd_ms,DOMContentLoaded_ms,ProductsReady_ms\n";
 
     function downloadCSV(data) {
         const blob = new Blob([data], { type: "text/csv" });
@@ -21,7 +26,7 @@
 
         const a = document.createElement("a");
         a.href = url;
-        a.download = "spa-initial-load-products-rendered.csv";
+        a.download = "spa-initial-products-ready.csv";
         document.body.appendChild(a);
         a.click();
         a.remove();
@@ -29,36 +34,58 @@
         URL.revokeObjectURL(url);
     }
 
-    function waitForProductsRendered(timeout = 8000) {
+    function waitForPageLoad() {
+        return new Promise((resolve) => {
+            if (document.readyState === "complete") {
+                resolve();
+            } else {
+                window.addEventListener("load", resolve, { once: true });
+            }
+        });
+    }
+
+    function waitForProductsReady(timeout = 10000) {
         return new Promise((resolve, reject) => {
-            const start = performance.now();
+            if (typeof window.__productsReadyTime === "number") {
+                resolve(window.__productsReadyTime);
+                return;
+            }
 
-            const interval = setInterval(() => {
-                const cards = document.querySelectorAll(".product-card");
-                const images = document.querySelectorAll(".product-card img");
-
-                if (cards.length >= 40 && images.length >= 40) {
-                    clearInterval(interval);
-                    resolve(performance.now());
+            const checkInterval = setInterval(() => {
+                if (typeof window.__productsReadyTime === "number") {
+                    clearInterval(checkInterval);
+                    clearTimeout(timer);
+                    resolve(window.__productsReadyTime);
                 }
+            }, 25);
 
-                if (performance.now() - start > timeout) {
-                    clearInterval(interval);
-                    reject(new Error("Products did not render in time"));
-                }
-            }, 50);
+            const timer = setTimeout(() => {
+                clearInterval(checkInterval);
+                reject(new Error("products-ready signal did not arrive in time"));
+            }, timeout);
+
+            window.addEventListener(
+                "products-ready",
+                (event) => {
+                    clearInterval(checkInterval);
+                    clearTimeout(timer);
+                    resolve(event.detail.time);
+                },
+                { once: true }
+            );
         });
     }
 
     window.startSPAInitialTest = function () {
         localStorage.setItem(RUN_KEY, "true");
         localStorage.setItem(COUNTER_KEY, "0");
-        localStorage.setItem(
-            DATA_KEY,
-            "Iteration,LoadEventEnd_ms,DOMContentLoaded_ms,ProductsRendered_ms\n"
-        );
+        localStorage.setItem(DATA_KEY, CSV_HEADER);
 
-        location.href = "/products";
+        if (location.pathname === "/products") {
+            location.reload();
+        } else {
+            location.href = "/products";
+        }
     };
 
     window.stopSPAInitialTest = function () {
@@ -68,26 +95,30 @@
         console.log("SPA initial load test stopped");
     };
 
-    if (localStorage.getItem(RUN_KEY) !== "true") return;
+    async function runMeasurement() {
+        if (localStorage.getItem(RUN_KEY) !== "true") return;
 
-    window.addEventListener("load", async () => {
         try {
+            const productsReadyPromise = waitForProductsReady();
+
+            await waitForPageLoad();
+
+            const productsReadyTime = await productsReadyPromise;
             const nav = performance.getEntriesByType("navigation")[0];
-            const renderedTime = await waitForProductsRendered();
 
             let counter = parseInt(localStorage.getItem(COUNTER_KEY) || "0", 10);
-            let data =
-                localStorage.getItem(DATA_KEY) ||
-                "Iteration,LoadEventEnd_ms,DOMContentLoaded_ms,ProductsRendered_ms\n";
+            let data = localStorage.getItem(DATA_KEY) || CSV_HEADER;
 
             counter++;
 
-            data += `${counter},${nav.loadEventEnd.toFixed(2)},${nav.domContentLoadedEventEnd.toFixed(2)},${renderedTime.toFixed(2)}\n`;
+            data += `${counter},${nav.loadEventEnd.toFixed(2)},${nav.domContentLoadedEventEnd.toFixed(2)},${productsReadyTime.toFixed(2)}\n`;
 
             localStorage.setItem(COUNTER_KEY, String(counter));
             localStorage.setItem(DATA_KEY, data);
 
-            console.log(`SPA initial ${counter}/${ITERATIONS}: rendered=${renderedTime.toFixed(2)} ms`);
+            console.log(
+                `SPA initial ${counter}/${ITERATIONS}: productsReady=${productsReadyTime.toFixed(2)} ms`
+            );
 
             if (counter >= ITERATIONS) {
                 downloadCSV(data);
@@ -104,7 +135,9 @@
             console.error(error);
             alert(error.message);
         }
-    });
+    }
 
-    console.log("SPA initial products rendered script loaded. Kör startSPAInitialTest()");
+    runMeasurement();
+
+    console.log("SPA initial products-ready script loaded. Kör startSPAInitialTest()");
 })();

@@ -58,7 +58,7 @@ function Products({ addToCart }) {
   }, []);
 
   useEffect(() => {
-    if (!hasMarkedReady.current && products.length > 50) {
+    if (!hasMarkedReady.current && products.length > 0) {
       hasMarkedReady.current = true;
 
       requestAnimationFrame(() => {
