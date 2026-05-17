@@ -36,7 +36,7 @@ function Products() {
   }, []);
 
   useEffect(() => {
-    if (!hasMarkedReady.current && products.length >= 0) {
+if (!hasMarkedReady.current && products.length > 0) {
       hasMarkedReady.current = true;
 
       requestAnimationFrame(() => {

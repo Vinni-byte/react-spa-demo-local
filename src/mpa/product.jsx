@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import "../index.css";
 import "../App.css";
@@ -31,6 +31,7 @@ function addToCart(product) {
 
 function ProductPage() {
   const [product, setProduct] = useState(null);
+  const hasMarkedReady = useRef(false);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -44,6 +45,32 @@ function ProductPage() {
       })
       .catch((error) => console.error("Fel vid hämtning av produkt:", error));
   }, []);
+  useEffect(() => {
+  window.__productReadyTime = null;
+  hasMarkedReady.current = false;
+}, []);
+
+useEffect(() => {
+  if (!hasMarkedReady.current && product) {
+    hasMarkedReady.current = true;
+
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        const readyTime = performance.now();
+
+        window.__productReadyTime = readyTime;
+
+        console.log("mpa product-ready dispatched", readyTime, product.id);
+
+        window.dispatchEvent(
+          new CustomEvent("product-ready", {
+            detail: { time: readyTime }
+          })
+        );
+      });
+    });
+  }
+}, [product]);
 
   if (!product) {
     return (

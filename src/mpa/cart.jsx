@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import "../index.css";
 import "../App.css";
@@ -25,10 +25,41 @@ function getCart() {
 
 function CartPage() {
   const [cart, setCart] = useState([]);
+  const hasMarkedReady = useRef(false);
 
   useEffect(() => {
     setCart(getCart());
   }, []);
+  useEffect(() => {
+  window.__cartReadyTime = null;
+  hasMarkedReady.current = false;
+}, []);
+
+useEffect(() => {
+  if (!hasMarkedReady.current && cart.length > 0) {
+    hasMarkedReady.current = true;
+
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        const readyTime = performance.now();
+
+        window.__cartReadyTime = readyTime;
+
+        console.log("mpa cart-ready dispatched", readyTime, cart.length, cart[0]?.id);
+
+        window.dispatchEvent(
+          new CustomEvent("cart-ready", {
+            detail: {
+              time: readyTime,
+              cartCount: cart.length,
+              firstProductId: cart[0]?.id ?? null
+            }
+          })
+        );
+      });
+    });
+  }
+}, [cart]);
 
   return (
     <>

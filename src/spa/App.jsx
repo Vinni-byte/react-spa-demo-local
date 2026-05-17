@@ -31,17 +31,17 @@ function Home() {
         <div className="hero-text">
           <h1>AHAMKARA WHERE DREAMS CEASE TO EXIST</h1>
           <p>The Sport store for you</p>
-          
-<NavLink to="/products">
-  <button id="home-shop-button">Shop</button>
-</NavLink>
+
+          <NavLink to="/products">
+            <button id="home-shop-button">Shop</button>
+          </NavLink>
         </div>
       </div>
     </div>
   );
 }
 
-function Products({ addToCart }) {
+function Products() {
   const [products, setProducts] = useState([]);
   const hasMarkedReady = useRef(false);
 
@@ -66,6 +66,8 @@ function Products({ addToCart }) {
           const readyTime = performance.now();
 
           window.__productsReadyTime = readyTime;
+
+          console.log("products-ready dispatched", readyTime, products.length);
 
           window.dispatchEvent(
             new CustomEvent("products-ready", {
@@ -112,9 +114,16 @@ function Products({ addToCart }) {
     </div>
   );
 }
+
 function ProductDetails({ addToCart }) {
   const { id } = useParams();
   const [product, setProduct] = useState(null);
+  const hasMarkedReady = useRef(false);
+
+  useEffect(() => {
+    window.__productReadyTime = null;
+    hasMarkedReady.current = false;
+  }, [id]);
 
   useEffect(() => {
     fetch("/products.json")
@@ -126,6 +135,28 @@ function ProductDetails({ addToCart }) {
       .catch((error) => console.error("Fel vid hämtning av produkt:", error));
   }, [id]);
 
+  useEffect(() => {
+    if (!hasMarkedReady.current && product) {
+      hasMarkedReady.current = true;
+
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          const readyTime = performance.now();
+
+          window.__productReadyTime = readyTime;
+
+          console.log("product-ready dispatched", readyTime, product.id);
+
+          window.dispatchEvent(
+            new CustomEvent("product-ready", {
+              detail: { time: readyTime }
+            })
+          );
+        });
+      });
+    }
+  }, [product]);
+
   if (!product) {
     return <p>Loading...</p>;
   }
@@ -133,12 +164,15 @@ function ProductDetails({ addToCart }) {
   return (
     <div>
       <h1>{product.name}</h1>
+
       <img
         className="buy-image"
         src={product.image}
         alt={product.name}
       />
+
       <p>{product.price} kr</p>
+
       <button id="button-product" onClick={() => addToCart(product)}>
         Add to cart
       </button>
@@ -146,7 +180,40 @@ function ProductDetails({ addToCart }) {
   );
 }
 
-function Cart({cart}) {
+function Cart({ cart }) {
+  const hasMarkedReady = useRef(false);
+
+  useEffect(() => {
+    window.__cartReadyTime = null;
+    hasMarkedReady.current = false;
+  }, []);
+
+  useEffect(() => {
+    if (!hasMarkedReady.current && cart.length > 0) {
+      hasMarkedReady.current = true;
+
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          const readyTime = performance.now();
+
+          window.__cartReadyTime = readyTime;
+
+          console.log("cart-ready dispatched", readyTime, cart.length, cart[0]?.id);
+
+          window.dispatchEvent(
+            new CustomEvent("cart-ready", {
+              detail: {
+                time: readyTime,
+                cartCount: cart.length,
+                firstProductId: cart[0]?.id ?? null
+              }
+            })
+          );
+        });
+      });
+    }
+  }, [cart]);
+
   return (
     <div>
       <h1>CART</h1>
@@ -170,17 +237,15 @@ function Cart({cart}) {
   );
 }
 
-
-
-
 function App() {
   function getStoredCart() {
-  return JSON.parse(localStorage.getItem("cart") || "[]");
-}
+    return JSON.parse(localStorage.getItem("cart") || "[]");
+  }
 
-function saveStoredCart(cart) {
-  localStorage.setItem("cart", JSON.stringify(cart));
-}
+  function saveStoredCart(cart) {
+    localStorage.setItem("cart", JSON.stringify(cart));
+  }
+
   const [cart, setCart] = useState(() => getStoredCart());
 
   const addToCart = (product) => {
@@ -191,13 +256,28 @@ function saveStoredCart(cart) {
     });
   };
 
+  useEffect(() => {
+    function resetCartForMeasurement() {
+      setCart([]);
+      localStorage.removeItem("cart");
+      window.__cartReadyTime = null;
+    }
+
+    window.addEventListener("measurement-reset-cart", resetCartForMeasurement);
+
+    return () => {
+      window.removeEventListener("measurement-reset-cart", resetCartForMeasurement);
+    };
+  }, []);
+
   return (
     <BrowserRouter>
       <Navbar />
+
       <main className="page-content">
         <Routes>
           <Route path="/" element={<Home />} />
-          <Route path="/products" element={<Products addToCart={addToCart} />} />
+          <Route path="/products" element={<Products />} />
           <Route path="/products/:id" element={<ProductDetails addToCart={addToCart} />} />
           <Route path="/cart" element={<Cart cart={cart} />} />
         </Routes>

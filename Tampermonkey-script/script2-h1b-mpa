@@ -1,0 +1,327 @@
+// ==UserScript==
+// @name         MPA Flow Navigation Test Ready Signals
+// @namespace    http://tampermonkey.net/
+// @version      1.0
+// @description  Mäter upprepad navigering i React-baserad MPA med ready-signaler
+// @match        http://localhost:5173/mpa-home.html*
+// @match        http://localhost:5173/mpa-products.html*
+// @match        http://localhost:5173/mpa-product.html*
+// @match        http://localhost:5173/mpa-cart.html*
+// @grant        none
+// @run-at       document-start
+// ==/UserScript==
+
+(function () {
+    "use strict";
+
+    const ITERATIONS = 100;
+
+    const RUN_KEY = "mpa_flow_running";
+    const COUNTER_KEY = "mpa_flow_counter";
+    const DATA_KEY = "mpa_flow_data";
+    const STEP_KEY = "mpa_flow_step";
+    const START_TIME_KEY = "mpa_flow_start_time";
+
+    const PRODUCTS_READY_KEY = "mpa_flow_products_ready";
+    const PRODUCT_READY_KEY = "mpa_flow_product_ready";
+
+    const HOME_URL = "/mpa-home.html";
+    const PRODUCTS_URL = "/mpa-products.html";
+    const PRODUCT_URL = "/mpa-product.html";
+    const CART_URL = "/mpa-cart.html";
+
+    const CSV_HEADER =
+        "Iteration,TotalFlowTime_ms,ProductsReady_ms,ProductReady_ms,CartReady_ms,CartCount,FirstProductId\n";
+
+    const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+    function absoluteNow() {
+        return performance.timeOrigin + performance.now();
+    }
+
+    function toAbsoluteTime(relativeTime) {
+        return performance.timeOrigin + relativeTime;
+    }
+
+    function downloadCSV(csv) {
+        const blob = new Blob([csv], { type: "text/csv" });
+        const url = URL.createObjectURL(blob);
+
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "mpa-flow-navigation-ready-signals.csv";
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+
+        URL.revokeObjectURL(url);
+    }
+
+    async function waitForSelector(selector, timeout = 5000) {
+        const start = performance.now();
+
+        while (performance.now() - start < timeout) {
+            const element = document.querySelector(selector);
+            if (element) return element;
+            await wait(25);
+        }
+
+        throw new Error("Kunde inte hitta element: " + selector);
+    }
+
+async function waitForCartStored(timeout = 3000) {
+    const start = performance.now();
+
+    while (performance.now() - start < timeout) {
+        const cart = JSON.parse(localStorage.getItem("cart") || "[]");
+
+        if (cart.length > 0) {
+            return cart;
+        }
+
+        await wait(10);
+    }
+
+    throw new Error("Cart was not updated after add to cart");
+}
+
+    function waitForReadySignal(signalName, globalTimeName, timeout = 10000) {
+        return new Promise((resolve, reject) => {
+            if (typeof window[globalTimeName] === "number") {
+                resolve(toAbsoluteTime(window[globalTimeName]));
+                return;
+            }
+
+            const checkInterval = setInterval(() => {
+                if (typeof window[globalTimeName] === "number") {
+                    clearInterval(checkInterval);
+                    clearTimeout(timer);
+                    resolve(toAbsoluteTime(window[globalTimeName]));
+                }
+            }, 25);
+
+            const timer = setTimeout(() => {
+                clearInterval(checkInterval);
+                reject(new Error(`${signalName} signal did not arrive in time`));
+            }, timeout);
+
+            window.addEventListener(
+                signalName,
+                (event) => {
+                    clearInterval(checkInterval);
+                    clearTimeout(timer);
+                    resolve(toAbsoluteTime(event.detail.time));
+                },
+                { once: true }
+            );
+        });
+    }
+
+    function waitForProductsReady() {
+        return waitForReadySignal("products-ready", "__productsReadyTime");
+    }
+
+    function waitForProductReady() {
+        return waitForReadySignal("product-ready", "__productReadyTime");
+    }
+
+    function waitForCartReady(timeout = 10000) {
+        return new Promise((resolve, reject) => {
+            if (typeof window.__cartReadyTime === "number") {
+                const cart = JSON.parse(localStorage.getItem("cart") || "[]");
+
+                resolve({
+                    time: toAbsoluteTime(window.__cartReadyTime),
+                    cartCount: cart.length,
+                    firstProductId: cart[0]?.id ?? null
+                });
+
+                return;
+            }
+
+            const timer = setTimeout(() => {
+                reject(new Error("cart-ready signal did not arrive in time"));
+            }, timeout);
+
+            window.addEventListener(
+                "cart-ready",
+                (event) => {
+                    clearTimeout(timer);
+
+                    resolve({
+                        time: toAbsoluteTime(event.detail.time),
+                        cartCount: event.detail.cartCount,
+                        firstProductId: event.detail.firstProductId
+                    });
+                },
+                { once: true }
+            );
+        });
+    }
+
+    function clearIterationState() {
+        localStorage.removeItem("cart");
+        localStorage.removeItem(STEP_KEY);
+        localStorage.removeItem(START_TIME_KEY);
+        localStorage.removeItem(PRODUCTS_READY_KEY);
+        localStorage.removeItem(PRODUCT_READY_KEY);
+    }
+
+    window.startMPAFlowTest = function () {
+        localStorage.setItem(RUN_KEY, "true");
+        localStorage.setItem(COUNTER_KEY, "0");
+        localStorage.setItem(DATA_KEY, CSV_HEADER);
+
+        clearIterationState();
+
+        console.log("Startar MPA flow-test med ready-signaler...");
+        window.location.href = HOME_URL;
+    };
+
+    window.stopMPAFlowTest = function () {
+        localStorage.removeItem(RUN_KEY);
+        localStorage.removeItem(COUNTER_KEY);
+        localStorage.removeItem(DATA_KEY);
+
+        clearIterationState();
+
+        console.log("MPA flow-test stoppat");
+    };
+
+    async function continueTestIfRunning() {
+        if (localStorage.getItem(RUN_KEY) !== "true") return;
+
+        let counter = parseInt(localStorage.getItem(COUNTER_KEY) || "0", 10);
+        let data = localStorage.getItem(DATA_KEY) || CSV_HEADER;
+
+        if (counter >= ITERATIONS) {
+            downloadCSV(data);
+
+            localStorage.removeItem(RUN_KEY);
+            localStorage.removeItem(COUNTER_KEY);
+            localStorage.removeItem(DATA_KEY);
+
+            clearIterationState();
+
+            alert("MPA flow-test klart");
+            return;
+        }
+
+        const path = window.location.pathname;
+        const step = localStorage.getItem(STEP_KEY);
+
+        try {
+            if (!step) {
+                if (path !== HOME_URL) {
+                    window.location.href = HOME_URL;
+                    return;
+                }
+
+                localStorage.removeItem("cart");
+
+                const productsLink = await waitForSelector('a[href="/mpa-products.html"]');
+
+                localStorage.setItem(START_TIME_KEY, String(absoluteNow()));
+                localStorage.setItem(STEP_KEY, "products");
+
+                productsLink.click();
+                return;
+            }
+
+            if (step === "products") {
+                if (path !== PRODUCTS_URL) return;
+
+                const productsReadyAbs = await waitForProductsReady();
+                const startTime = parseFloat(localStorage.getItem(START_TIME_KEY));
+
+                localStorage.setItem(
+                    PRODUCTS_READY_KEY,
+                    String(productsReadyAbs - startTime)
+                );
+
+                const productLink = await waitForSelector('a[href^="/mpa-product.html?id="]');
+
+                localStorage.setItem(STEP_KEY, "product");
+
+                productLink.click();
+                return;
+            }
+
+            if (step === "product") {
+                if (path !== PRODUCT_URL) return;
+
+                const productReadyAbs = await waitForProductReady();
+                const startTime = parseFloat(localStorage.getItem(START_TIME_KEY));
+
+                localStorage.setItem(
+                    PRODUCT_READY_KEY,
+                    String(productReadyAbs - startTime)
+                );
+
+                const addButton = await waitForSelector("#button-product");
+                addButton.click();
+
+                await waitForCartStored();
+
+                const cartLink = await waitForSelector('a[href="/mpa-cart.html"]');
+
+                localStorage.setItem(STEP_KEY, "cart");
+
+                cartLink.click();
+                return;
+            }
+
+            if (step === "cart") {
+                if (path !== CART_URL) return;
+
+                const cartReadyResult = await waitForCartReady();
+
+                const startTime = parseFloat(localStorage.getItem(START_TIME_KEY));
+                const totalTime = cartReadyResult.time - startTime;
+
+                const productsReadyTime = parseFloat(
+                    localStorage.getItem(PRODUCTS_READY_KEY) || "0"
+                );
+
+                const productReadyTime = parseFloat(
+                    localStorage.getItem(PRODUCT_READY_KEY) || "0"
+                );
+
+                const cartReadyTime = cartReadyResult.time - startTime;
+
+                counter++;
+
+                data += `${counter},${totalTime.toFixed(2)},${productsReadyTime.toFixed(2)},${productReadyTime.toFixed(2)},${cartReadyTime.toFixed(2)},${cartReadyResult.cartCount},${cartReadyResult.firstProductId}\n`;
+
+                localStorage.setItem(COUNTER_KEY, String(counter));
+                localStorage.setItem(DATA_KEY, data);
+
+                console.log(
+                    `MPA flow ${counter}/${ITERATIONS}: total=${totalTime.toFixed(2)} ms, cartCount=${cartReadyResult.cartCount}, productId=${cartReadyResult.firstProductId}`
+                );
+
+                clearIterationState();
+
+                setTimeout(() => {
+                    window.location.href = HOME_URL;
+                }, 700);
+            }
+        } catch (error) {
+            console.error("MPA flow-test stoppades:", error);
+            alert("MPA flow-test stoppades: " + error.message);
+        }
+    }
+function scheduleContinueTest() {
+    setTimeout(() => {
+        continueTestIfRunning();
+    }, 0);
+}
+
+if (document.readyState === "complete" || document.readyState === "interactive") {
+    scheduleContinueTest();
+} else {
+    window.addEventListener("load", scheduleContinueTest, { once: true });
+}
+
+console.log("MPA flow test ready-signals loaded. Kör startMPAFlowTest()");
+})();
