@@ -11,7 +11,7 @@
 (function () {
     "use strict";
 
-    const ITERATIONS = 100; // använd 20 först för pilot, ändra till 100 när scriptet fungerar stabilt
+    const ITERATIONS = 100; 
 
     const COUNTER_KEY = "mpa_initial_counter";
     const DATA_KEY = "mpa_initial_data";
